@@ -7,6 +7,7 @@
 #include <M5Unified.h>
 
 static void func_hello() {
+  // M5.Display.clear();
   int w = M5.Display.width() >> 3;
   int h = M5.Display.height() >> 3;
   for (int i = 0; i < 128; ++i) {
@@ -18,35 +19,106 @@ static void func_hello() {
   }
 }
 
+class BasePage {
+  public:
+    virtual void init() {
+      M5.Display.fillScreen(TFT_CHOCOLATE);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("fallback init");
+    }
+
+    virtual void update() {
+      M5.Display.fillScreen(TFT_CHOCOLATE);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("fallback update");
+    }
+};
+
+class HexPage : public BasePage {
+  public:
+    void init() override {
+      M5.Display.fillScreen(TFT_AZURE);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("HexPage init");
+    }
+
+    void update() override {
+      M5.Display.fillScreen(TFT_AZURE);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("HexPage update");
+    }
+};
+
 class Menu {
   public:
     struct menu_item_t {
       const char* title;
       void (*func)(void);
     };
+    bool visible = false;
+    bool initialized = false;
     int menu_x = 2;
     int menu_y = 20;
     int menu_w = 120;
     int menu_h = 30;
-    int menu_padding = 36;
+    int menu_padding = 25;
     size_t cursor_index = 0;
-    menu_item_t menus[2] = {
+    menu_item_t menus[3] = {
       { "Hello", func_hello },
-      { "Clock", func_hello }
-      // { "Hex", func_rect },
+      { "Clock", func_hello },
+      { "Hex", func_hello }
       // { "Photos", func_line },
       // { "Schedule", func_triangle },
       // { "arc", func_arc },
     };
     //size_t menu_count = 0;
-    size_t menu_count = 2;
+    size_t menu_count = 3;
 
     // int myNum; // Attribute
     void init() { // Method
+      if (initialized) {
+        return;
+      }
+
       M5.Display.fillScreen(TFT_NAVY);
       
-      M5.Display.setCursor(menu_x, 0);
+      // int w = M5.Display.width() >> 2;
+      // int h = M5.Display.height() >> 2;
+      //   for (int i = 0; i < 128; ++i) {
+      //     M5.Display.fillRect(
+      //       rand() % M5.Display.width(),
+      //       rand() % M5.Display.height(),
+      //       w, h,
+      //       (i&1) ? TFT_BLACK:TFT_WHITE
+      //     );
+      //   }
+
+      M5.Display.startWrite();
+
+      menu_w = M5.Display.width() >> 1;
+
+      // if (myObj.menu_w < 70) {
+      //   myObj.menu_y = 10;
+      //   myObj.menu_w = (M5.Display.width() * 4) / 5;
+      // } else {
+        M5.Display.setFont(&fonts::DejaVu18);
+        // if (M5.Display.width() > 400) {
+        M5.Display.setTextSize(2);
+          // menu_y *= 2;
+          menu_w = M5.Display.width() >> 1;
+        //}
+      // }
+
+      static int x = M5.Lcd.width() / 2;
+
+      menu_x = x - menu_w / 2;
+
+      menu_padding = (M5.Display.height() - menu_y) / menu_count;
+      menu_h = menu_padding - 2;
+      
+      M5.Display.setCursor(0, M5.Display.width() / 2);
       M5.Display.print("MENU");
+      M5.Display.setCursor(menu_x, 0);
 
       for (size_t i = 0; i < menu_count; i++) {
         draw_menu(i, i == cursor_index);
@@ -54,6 +126,8 @@ class Menu {
       // menus[2] 
       // constexpr const size_t menu_count = sizeof(menus) / sizeof(this.menus[0]);
       menu_count = sizeof(menus) / sizeof(menus[0]);
+
+      initialized = true;
     }
 
     void draw_menu(size_t index, bool focus) {
@@ -71,7 +145,7 @@ class Menu {
     void select_menu(size_t index) {
       /// 操作音を鳴らす。
       float Hz = 880 * powf(2.0, index / 12.0f);
-      M5.Speaker.tone(Hz, 100);
+      //M5.Speaker.tone(Hz, 100);
       cursor_index = index;
     }
 
@@ -86,24 +160,36 @@ class Menu {
     void exec_menu(bool holding) {
       /// holding は長押し中とそれ以外で処理を変えたい場合に利用できる。
       if (holding == false) {
-        M5.Speaker.tone(880, 150);
+       // M5.Speaker.tone(880, 150);
       }
 
       if (menus[cursor_index].func != nullptr) {
         // M5.Display.setClipRect(menu_x + menu_w, 0, M5.Display.width(), M5.Display.height());
-        M5.Display.setClipRect(0, 0, M5.Display.width() - menu_w + 10, M5.Display.height());
-        menus[cursor_index].func();
-        M5.Display.clearClipRect();
+        // M5.Display.setClipRect(0, 0, M5.Display.width() - menu_w + 10, M5.Display.height());
+    // menus[cursor_index].func();
+        visible = false;
+        initialized = false;
+        // M5.Display.clearClipRect();
+        M5.Display.fillScreen(TFT_AZURE);
       } else {
         // NOTE: for init
-        menus[1].func();
+        // menus[1].func();
       }
     }
 };
 
-Menu myObj; 
+Menu myObj;
+
+BasePage contentPage;
 
 void setup(void) {
+  
+  new(&myObj) Menu(); // reconstruct
+
+  new(&contentPage) HexPage(); // reconstruct
+
+  // BasePage contentPage = HexPage();
+
   auto cfg = M5.config();
   M5.begin(cfg);
   Serial.begin(115200);
@@ -113,28 +199,6 @@ void setup(void) {
   }
   // M5.Display.setRotation(M5.Display.getRotation() ^ 3);
 
-  M5.Display.startWrite();
-
-  myObj.menu_w = M5.Display.width() >> 1;
-
-  // if (myObj.menu_w < 70) {
-  //   myObj.menu_y = 10;
-  //   myObj.menu_w = (M5.Display.width() * 4) / 5;
-  // } else {
-    M5.Display.setFont(&fonts::DejaVu18);
-    if (M5.Display.width() > 400) {
-      M5.Display.setTextSize(2);
-      myObj.menu_y *= 2;
-      myObj.menu_w = M5.Display.width() >> 1;
-    }
-  // }
-
-  static int x = M5.Lcd.width() / 2;
-
-  myObj.menu_x = x - myObj.menu_w / 2;
-
-  myObj.menu_padding = (M5.Display.height() - myObj.menu_y) / myObj.menu_count;
-  myObj.menu_h = myObj.menu_padding - 2;
 
   /// このサンプルでは、startWriteをしたまま、対になるendWriteを使わないようにする。
   // M5.Display.startWrite();
@@ -151,10 +215,11 @@ void setup(void) {
   // }
 
   // Create an object of MyClass
-  myObj.init();  // Call the method
+  // myObj.init();  // Call the method
 
   //myObj.menu_count = sizeof(myObj.menus) / sizeof(myObj.menus[0]);
-
+  // myObj.init();
+  contentPage.init();
 }
 
 void loop(void) {
@@ -162,11 +227,13 @@ void loop(void) {
   /// EPDでは画面の更新中はBusyとなるためここを通らない。
   if (!M5.Display.displayBusy()) {
     // 選択しているメニューが変更されていれば再描画。
-    static size_t prev_index = 0;
-    if (prev_index != myObj.cursor_index) {
-      myObj.draw_menu(prev_index, false);
-      myObj.draw_menu(myObj.cursor_index, true);
-      prev_index = myObj.cursor_index;
+    if(myObj.visible) {
+      static size_t prev_index = 0;
+      if (prev_index != myObj.cursor_index) {
+        myObj.draw_menu(prev_index, false);
+        myObj.draw_menu(myObj.cursor_index, true);
+        prev_index = myObj.cursor_index;
+      }
     }
     /// 表示内容を画面に反映する。
     M5.Display.display();
@@ -188,19 +255,21 @@ void loop(void) {
   for (size_t i = 0; i < touch_count; i++) {
     auto detail = M5.Touch.getDetail(i);
     //
-    if ( ((size_t)detail.x - myObj.menu_x) < myObj.menu_w) {
-      size_t index = (detail.y - myObj.menu_y) / myObj.menu_padding;
-      if (index < myObj.menu_count) {
-        if (detail.wasPressed()) {
-          myObj.select_menu(index);
-        } else
-        if (index == myObj.cursor_index) {
-          if (detail.wasClicked()) {
-            myObj.exec_menu(false);
+    if(myObj.visible) {
+      if ( ((size_t)detail.x - myObj.menu_x) < myObj.menu_w) {
+        size_t index = (detail.y - myObj.menu_y) / myObj.menu_padding;
+        if (index < myObj.menu_count) {
+          if (detail.wasPressed()) {
+            myObj.select_menu(index);
           }
           else
-          if (detail.isHolding()) {
-            myObj.exec_menu(true);
+          if (index == myObj.cursor_index) {
+            if (detail.wasClicked()) {
+              myObj.exec_menu(false);
+            } else
+            if (detail.isHolding()) {
+              myObj.exec_menu(true);
+            }
           }
         }
       }
@@ -213,14 +282,19 @@ void loop(void) {
   switch (M5.getBoard()) {
   default:
     if (M5.BtnA.wasClicked()) {
-      myObj.move_menu(false);
+      if(myObj.visible) {
+        myObj.move_menu(false);
+      } else {
+        myObj.visible = true;
+        myObj.init();
+      }
     }
-    if (M5.BtnA.wasHold()) {
-      myObj.exec_menu(false);
-    }
-    if (M5.BtnA.isHolding()) {
-      myObj.exec_menu(true);
-    }
+    // if (M5.BtnA.wasHold()) {
+    //   myObj.exec_menu(false);
+    // }
+    // if (M5.BtnA.isHolding()) {
+    //   myObj.exec_menu(true);
+    // }
     if (M5.BtnB.wasClicked()) {
       myObj.move_menu(true);
     }

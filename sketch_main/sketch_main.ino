@@ -19,52 +19,32 @@ static void func_hello() {
   }
 }
 
-
 class BasePage {
   public:
     bool initialized = false;
+
+    virtual void render() {
+      if (initialized) {
+        update();
+      } else {
+        init();
+      }
+    }
 
     virtual void init() {
       if (initialized) {
         return;
       }
-      M5.Display.fillScreen(TFT_CHOCOLATE);
+      M5.Display.fillScreen(TFT_DARKGREY);
       M5.Display.setCursor(100, 100);
       M5.Display.print("fallback init");
       initialized = true;
     }
 
     virtual void update() {
-      if (initialized) {
-        return;
-      }
-      M5.Display.fillScreen(TFT_CHOCOLATE);
+      M5.Display.fillScreen(TFT_DARKGREY);
       M5.Display.setCursor(100, 100);
       M5.Display.print("fallback update");
-      initialized = true;
-    }
-};
-
-class HexPage : public BasePage {
-  public:
-    void init() override {
-      if (initialized) {
-        return;
-      }
-      M5.Display.fillScreen(TFT_AZURE);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("HexPage init");
-      initialized = true;
-    }
-
-    void update() override {
-      if (initialized) {
-        return;
-      }
-      M5.Display.fillScreen(TFT_AZURE);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("HexPage update");
-      initialized = true;
     }
 };
 
@@ -81,13 +61,47 @@ class HelloPage : public BasePage {
     }
 
     void update() override {
-      if (initialized) {
-        return;
-      }
       M5.Display.fillScreen(TFT_DARKGREEN);
       M5.Display.setCursor(100, 100);
       M5.Display.print("HelloPage update");
+    }
+};
+
+class ClockPage : public BasePage {
+  public:
+    void init() override {
+      if (initialized) {
+        return;
+      }
+      M5.Display.fillScreen(TFT_MAROON);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("CLOCK init");
       initialized = true;
+    }
+
+    void update() override {
+      // M5.Display.fillScreen(TFT_MAROON);
+      // M5.Display.setCursor(100, 100);
+      // M5.Display.print("CLOCK update");
+    }
+};
+
+class HexPage : public BasePage {
+  public:
+    void init() override {
+      if (initialized) {
+        return;
+      }
+      M5.Display.fillScreen(TFT_DARKCYAN);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("HexPage init");
+      initialized = true;
+    }
+
+    void update() override {
+      M5.Display.fillScreen(TFT_DARKCYAN);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("HexPage update");
     }
 };
 
@@ -95,10 +109,11 @@ class Menu {
   public:
     struct menu_item_t {
       const char* title;
-      void (*func)(void);
+      void (*func)(size_t cursor_index);
     };
     bool visible = false;
     bool initialized = false;
+    bool sound = true;
     int menu_x = 2;
     int menu_y = 20;
     int menu_w = 120;
@@ -106,11 +121,11 @@ class Menu {
     int menu_padding = 25;
     size_t cursor_index = 0;
     menu_item_t menus[5] = {
-      { "Hello", test },
-      { "Clock", func_hello },
-      { "Hex", test2 },
-      { "Photos", func_hello },
-      { "Schedule", func_hello }
+      { "Hello", updateContentPage },
+      { "Clock", updateContentPage },
+      { "Hex", updateContentPage },
+      { "Photos", updateContentPage },
+      { "Schedule", updateContentPage }
       // { "arc", func_arc },
     };
     //size_t menu_count = 0;
@@ -123,10 +138,10 @@ class Menu {
       }
       // M5.Display.startWrite();
 
-      M5.Display.fillScreen(TFT_NAVY);
+      // M5.Display.fillScreen(TFT_NAVY);
       
-      int w = M5.Display.width() >> 2;
-      int h = M5.Display.height() >> 2;
+      int w = M5.Display.width() >> 3;
+      int h = M5.Display.height() >> 3;
       for (int i = 0; i < 128; ++i) {
         M5.Display.fillRect(
           rand() % M5.Display.width(),
@@ -135,8 +150,6 @@ class Menu {
           (i&1) ? TFT_BLACK:TFT_WHITE
         );
       }
-
-      
 
       menu_w = M5.Display.width() >> 1;
 
@@ -161,6 +174,7 @@ class Menu {
       
       M5.Display.setCursor(0, M5.Display.width() / 2);
       M5.Display.print("MENU");
+
       M5.Display.setCursor(menu_x, 0);
 
       for (size_t i = 0; i < menu_count; i++) {
@@ -188,7 +202,7 @@ class Menu {
     void select_menu(size_t index) {
       /// 操作音を鳴らす。
       float Hz = 880 * powf(2.0, index / 12.0f);
-      //M5.Speaker.tone(Hz, 100);
+      sound && M5.Speaker.tone(Hz, 100);
       cursor_index = index;
     }
 
@@ -203,20 +217,17 @@ class Menu {
     void exec_menu(bool holding) {
       /// holding は長押し中とそれ以外で処理を変えたい場合に利用できる。
       if (holding == false) {
-       // M5.Speaker.tone(880, 150);
+        sound && M5.Speaker.tone(880, 150);
       }
 
       if (menus[cursor_index].func != nullptr) {
         // M5.Display.setClipRect(menu_x + menu_w, 0, M5.Display.width(), M5.Display.height());
         // M5.Display.setClipRect(0, 0, M5.Display.width() - menu_w + 10, M5.Display.height());
-        menus[cursor_index].func();
+        menus[cursor_index].func(cursor_index);
         visible = false;
         initialized = false;
         // M5.Display.clearClipRect();
         // M5.Display.fillScreen(TFT_AZURE);
-      } else {
-        // NOTE: for init
-        // menus[1].func();
       }
     }
 
@@ -232,22 +243,36 @@ class Menu {
     }
 };
 
-Menu myObj;
 
 // BasePage contentPage;
 BasePage* contentPage;
 
 HexPage hexPage;
+ClockPage clockPage;
 HelloPage helloPage;
+BasePage basePage;
 
+Menu myObj;
 
-static void test() {
-  contentPage = &helloPage;
-  contentPage->initialized = false;
-}
-
-static void test2() {
-  contentPage = &hexPage;
+static void updateContentPage(size_t cursor_index) {
+  if(cursor_index == 0) {
+    contentPage = &helloPage;
+  }
+  if(cursor_index == 1) {
+    contentPage = &clockPage;
+  }
+  if(cursor_index == 2) {
+    contentPage = &hexPage;
+  }
+  if(cursor_index == 3) {
+    contentPage = &basePage;
+  }
+  if(cursor_index == 4) {
+    contentPage = &basePage;
+  }
+  if(cursor_index == 5) {
+    contentPage = &basePage;
+  }
   contentPage->initialized = false;
 }
 
@@ -264,7 +289,7 @@ void setup(void) {
 
   // Pointing base class pointer to 
   // derived class object
-  contentPage = &hexPage;
+  contentPage = &clockPage;
   // Calling the display function 
   // using base class pointer
   // contentPage->display();
@@ -292,14 +317,9 @@ void loop(void) {
   if (!M5.Display.displayBusy()) {
     // 選択しているメニューが変更されていれば再描画。
     if(myObj.visible) {
-      if(myObj.initialized){
-        myObj.update();
-      } else {
-        myObj.init();
-        // M5.Display.startWrite();
-      }
+      myObj.update();
     } else {
-      contentPage->update();
+      contentPage->render();
     }
 
     /// 表示内容を画面に反映する。
@@ -330,13 +350,6 @@ void loop(void) {
           if (detail.wasPressed()) {
             myObj.select_menu(index);
             M5.Log.println("update");
-              
-              // Pointing base class pointer to
-              // derived class object
-              // contentPage = &helloPage;
-            // BasePae *contentPage = HelloPage();
-            // *contentPage HelloPage();
-            // BasePage *contentPage = new HelloPage();
           } else if (index == myObj.cursor_index) {
             if (detail.wasClicked()) {
               myObj.exec_menu(false);
@@ -350,26 +363,31 @@ void loop(void) {
     //
   }
 
-  //myObj.menus[cursor_index].func();
-
   switch (M5.getBoard()) {
   default:
     if (M5.BtnA.wasClicked()) {
       if(myObj.visible) {
         myObj.move_menu(false);
       } else {
-        myObj.visible = true;
+        // myObj.visible = true;
         // myObj.init();
       }
     }
     // if (M5.BtnA.wasHold()) {
     //   myObj.exec_menu(false);
     // }
-    // if (M5.BtnA.isHolding()) {
-    //   myObj.exec_menu(true);
-    // }
+    if (M5.BtnA.isHolding() && M5.BtnB.isHolding()) {
+      M5.Log.println("holding");
+      if(!myObj.visible) {
+        M5.Log.println("holding - visible");
+        myObj.visible = true;
+        myObj.init();
+      }
+    }
     if (M5.BtnB.wasClicked()) {
-      myObj.move_menu(true);
+      if(myObj.visible) {
+        myObj.move_menu(true);
+      }
     }
     break;
   }

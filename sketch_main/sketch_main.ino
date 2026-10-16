@@ -19,33 +19,75 @@ static void func_hello() {
   }
 }
 
+
 class BasePage {
   public:
+    bool initialized = false;
+
     virtual void init() {
+      if (initialized) {
+        return;
+      }
       M5.Display.fillScreen(TFT_CHOCOLATE);
       M5.Display.setCursor(100, 100);
       M5.Display.print("fallback init");
+      initialized = true;
     }
 
     virtual void update() {
+      if (initialized) {
+        return;
+      }
       M5.Display.fillScreen(TFT_CHOCOLATE);
       M5.Display.setCursor(100, 100);
       M5.Display.print("fallback update");
+      initialized = true;
     }
 };
 
 class HexPage : public BasePage {
   public:
     void init() override {
+      if (initialized) {
+        return;
+      }
       M5.Display.fillScreen(TFT_AZURE);
       M5.Display.setCursor(100, 100);
       M5.Display.print("HexPage init");
+      initialized = true;
     }
 
     void update() override {
+      if (initialized) {
+        return;
+      }
       M5.Display.fillScreen(TFT_AZURE);
       M5.Display.setCursor(100, 100);
       M5.Display.print("HexPage update");
+      initialized = true;
+    }
+};
+
+class HelloPage : public BasePage {
+  public:
+    void init() override {
+      if (initialized) {
+        return;
+      }
+      M5.Display.fillScreen(TFT_DARKGREEN);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("HelloPage init");
+      initialized = true;
+    }
+
+    void update() override {
+      if (initialized) {
+        return;
+      }
+      M5.Display.fillScreen(TFT_DARKGREEN);
+      M5.Display.setCursor(100, 100);
+      M5.Display.print("HelloPage update");
+      initialized = true;
     }
 };
 
@@ -63,37 +105,38 @@ class Menu {
     int menu_h = 30;
     int menu_padding = 25;
     size_t cursor_index = 0;
-    menu_item_t menus[3] = {
-      { "Hello", func_hello },
+    menu_item_t menus[5] = {
+      { "Hello", test },
       { "Clock", func_hello },
-      { "Hex", func_hello }
-      // { "Photos", func_line },
-      // { "Schedule", func_triangle },
+      { "Hex", test2 },
+      { "Photos", func_hello },
+      { "Schedule", func_hello }
       // { "arc", func_arc },
     };
     //size_t menu_count = 0;
-    size_t menu_count = 3;
+    size_t menu_count = 5;
 
     // int myNum; // Attribute
     void init() { // Method
       if (initialized) {
         return;
       }
+      // M5.Display.startWrite();
 
       M5.Display.fillScreen(TFT_NAVY);
       
-      // int w = M5.Display.width() >> 2;
-      // int h = M5.Display.height() >> 2;
-      //   for (int i = 0; i < 128; ++i) {
-      //     M5.Display.fillRect(
-      //       rand() % M5.Display.width(),
-      //       rand() % M5.Display.height(),
-      //       w, h,
-      //       (i&1) ? TFT_BLACK:TFT_WHITE
-      //     );
-      //   }
+      int w = M5.Display.width() >> 2;
+      int h = M5.Display.height() >> 2;
+      for (int i = 0; i < 128; ++i) {
+        M5.Display.fillRect(
+          rand() % M5.Display.width(),
+          rand() % M5.Display.height(),
+          w, h,
+          (i&1) ? TFT_BLACK:TFT_WHITE
+        );
+      }
 
-      M5.Display.startWrite();
+      
 
       menu_w = M5.Display.width() >> 1;
 
@@ -166,29 +209,65 @@ class Menu {
       if (menus[cursor_index].func != nullptr) {
         // M5.Display.setClipRect(menu_x + menu_w, 0, M5.Display.width(), M5.Display.height());
         // M5.Display.setClipRect(0, 0, M5.Display.width() - menu_w + 10, M5.Display.height());
-    // menus[cursor_index].func();
+        menus[cursor_index].func();
         visible = false;
         initialized = false;
         // M5.Display.clearClipRect();
-        M5.Display.fillScreen(TFT_AZURE);
+        // M5.Display.fillScreen(TFT_AZURE);
       } else {
         // NOTE: for init
         // menus[1].func();
+      }
+    }
+
+    void update() {
+      if(visible) {
+        static size_t prev_index = 0;
+        if (prev_index != cursor_index) {
+          draw_menu(prev_index, false);
+          draw_menu(cursor_index, true);
+          prev_index = cursor_index;
+        }
       }
     }
 };
 
 Menu myObj;
 
-BasePage contentPage;
+// BasePage contentPage;
+BasePage* contentPage;
+
+HexPage hexPage;
+HelloPage helloPage;
+
+
+static void test() {
+  contentPage = &helloPage;
+  contentPage->initialized = false;
+}
+
+static void test2() {
+  contentPage = &hexPage;
+  contentPage->initialized = false;
+}
 
 void setup(void) {
   
   new(&myObj) Menu(); // reconstruct
 
-  new(&contentPage) HexPage(); // reconstruct
+  // BasePage contentPage = BasePage();
+  // new(&contentPage) HexPage(); // reconstruct
+  // BasePage *contentPage = new HexPage();
+    // Creating a pointer of type Base  
+  // Creating an object of Derived class
+  
 
-  // BasePage contentPage = HexPage();
+  // Pointing base class pointer to 
+  // derived class object
+  contentPage = &hexPage;
+  // Calling the display function 
+  // using base class pointer
+  // contentPage->display();
 
   auto cfg = M5.config();
   M5.begin(cfg);
@@ -199,27 +278,12 @@ void setup(void) {
   }
   // M5.Display.setRotation(M5.Display.getRotation() ^ 3);
 
-
   /// このサンプルでは、startWriteをしたまま、対になるendWriteを使わないようにする。
   // M5.Display.startWrite();
 
   M5.Display.setEpdMode(epd_mode_t::epd_fastest);
 
-  // M5.Display.fillScreen(TFT_NAVY);
-  
-  // M5.Display.setCursor(myObj.menu_x, 0);
-  // M5.Display.print("MENU");
-
-  // for (size_t i = 0; i < myObj.menu_count; i++) {
-  //   myObj.draw_menu(i, i == myObj.cursor_index);
-  // }
-
-  // Create an object of MyClass
-  // myObj.init();  // Call the method
-
-  //myObj.menu_count = sizeof(myObj.menus) / sizeof(myObj.menus[0]);
-  // myObj.init();
-  contentPage.init();
+  contentPage->init();
 }
 
 void loop(void) {
@@ -228,15 +292,19 @@ void loop(void) {
   if (!M5.Display.displayBusy()) {
     // 選択しているメニューが変更されていれば再描画。
     if(myObj.visible) {
-      static size_t prev_index = 0;
-      if (prev_index != myObj.cursor_index) {
-        myObj.draw_menu(prev_index, false);
-        myObj.draw_menu(myObj.cursor_index, true);
-        prev_index = myObj.cursor_index;
+      if(myObj.initialized){
+        myObj.update();
+      } else {
+        myObj.init();
+        // M5.Display.startWrite();
       }
+    } else {
+      contentPage->update();
     }
+
     /// 表示内容を画面に反映する。
     M5.Display.display();
+
     /// ※ M5Paper, CoreInk, Unit OLED についてはここで画面が更新される。
   }
   { /// 10ミリ秒間隔で処理が進むように待機する。
@@ -261,13 +329,18 @@ void loop(void) {
         if (index < myObj.menu_count) {
           if (detail.wasPressed()) {
             myObj.select_menu(index);
-          }
-          else
-          if (index == myObj.cursor_index) {
+            M5.Log.println("update");
+              
+              // Pointing base class pointer to
+              // derived class object
+              // contentPage = &helloPage;
+            // BasePae *contentPage = HelloPage();
+            // *contentPage HelloPage();
+            // BasePage *contentPage = new HelloPage();
+          } else if (index == myObj.cursor_index) {
             if (detail.wasClicked()) {
               myObj.exec_menu(false);
-            } else
-            if (detail.isHolding()) {
+            } else if (detail.isHolding()) {
               myObj.exec_menu(true);
             }
           }
@@ -286,7 +359,7 @@ void loop(void) {
         myObj.move_menu(false);
       } else {
         myObj.visible = true;
-        myObj.init();
+        // myObj.init();
       }
     }
     // if (M5.BtnA.wasHold()) {

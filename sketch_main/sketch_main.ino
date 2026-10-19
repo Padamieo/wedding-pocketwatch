@@ -6,16 +6,18 @@
 
 #include <M5Unified.h>
 
-static void func_hello() {
+static void func_hello(size_t cursor_index) {
   // M5.Display.clear();
   int w = M5.Display.width() >> 3;
   int h = M5.Display.height() >> 3;
   for (int i = 0; i < 128; ++i) {
+    uint16_t c = rand();
     M5.Display.fillRect(
       rand() % M5.Display.width(),
       rand() % M5.Display.height(),
       w, h,
-      (i&1) ? TFT_BLACK:TFT_WHITE);
+      c
+    );
   }
 }
 
@@ -42,9 +44,9 @@ class BasePage {
     }
 
     virtual void update() {
-      M5.Display.fillScreen(TFT_DARKGREY);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("fallback update");
+      // M5.Display.fillScreen(TFT_DARKGREY);
+      // M5.Display.setCursor(100, 100);
+      // M5.Display.print("fallback update");
     }
 };
 
@@ -61,9 +63,9 @@ class HelloPage : public BasePage {
     }
 
     void update() override {
-      M5.Display.fillScreen(TFT_DARKGREEN);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("HelloPage update");
+      // M5.Display.fillScreen(TFT_DARKGREEN);
+      // M5.Display.setCursor(100, 100);
+      // M5.Display.print("HelloPage update");
     }
 };
 
@@ -99,9 +101,9 @@ class HexPage : public BasePage {
     }
 
     void update() override {
-      M5.Display.fillScreen(TFT_DARKCYAN);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("HexPage update");
+      // M5.Display.fillScreen(TFT_DARKCYAN);
+      // M5.Display.setCursor(100, 100);
+      // M5.Display.print("HexPage update");
     }
 };
 
@@ -113,7 +115,7 @@ class Menu {
     };
     bool visible = false;
     bool initialized = false;
-    bool sound = true;
+    bool sound = false;
     int menu_x = 2;
     int menu_y = 20;
     int menu_w = 120;
@@ -125,7 +127,7 @@ class Menu {
       { "Clock", updateContentPage },
       { "Hex", updateContentPage },
       { "Photos", updateContentPage },
-      { "Schedule", updateContentPage }
+      { "Schedule", func_hello }
       // { "arc", func_arc },
     };
     //size_t menu_count = 0;
@@ -143,27 +145,24 @@ class Menu {
       int w = M5.Display.width() >> 3;
       int h = M5.Display.height() >> 3;
       for (int i = 0; i < 128; ++i) {
+        uint16_t c = rand();
         M5.Display.fillRect(
           rand() % M5.Display.width(),
           rand() % M5.Display.height(),
-          w, h,
-          (i&1) ? TFT_BLACK:TFT_WHITE
+          w, h, c
+          //(i&1) ? TFT_BLACK:TFT_WHITE
         );
+        M5.delay(1);
       }
 
       menu_w = M5.Display.width() >> 1;
 
-      // if (myObj.menu_w < 70) {
-      //   myObj.menu_y = 10;
-      //   myObj.menu_w = (M5.Display.width() * 4) / 5;
-      // } else {
         M5.Display.setFont(&fonts::DejaVu18);
         // if (M5.Display.width() > 400) {
         M5.Display.setTextSize(2);
           // menu_y *= 2;
-          menu_w = M5.Display.width() >> 1;
+          // menu_w = M5.Display.width() >> 1;
         //}
-      // }
 
       static int x = M5.Lcd.width() / 2;
 
@@ -176,6 +175,8 @@ class Menu {
       M5.Display.print("MENU");
 
       M5.Display.setCursor(menu_x, 0);
+
+      M5.delay(10);
 
       for (size_t i = 0; i < menu_count; i++) {
         draw_menu(i, i == cursor_index);

@@ -10,6 +10,7 @@
 
 void updateContentPage(size_t cursor_index); 
 
+
 class ClockPage : public BasePage {
   public:
     bool analog = false;
@@ -49,7 +50,7 @@ class ClockPage : public BasePage {
       if (initialized) {
         return;
       }
-      M5.Display.fillScreen(TFT_BLACK);
+      M5.Display.fillScreen(TFT_MAROON);
       faceR = min((int)M5.Display.width(), (int)M5.Display.height()) * 9 / 20;
       if (analog && !canvasReady) {
         canvas.setPsram(true);
@@ -113,7 +114,7 @@ class ClockPage : public BasePage {
       M5.Display.setFont(&fonts::Font7);  // 7-segment style
       M5.Display.setTextSize(1);
       // Scale HH:MM to fill ~95% of the screen width
-      float timeScale = (w * 0.95f) / M5.Display.textWidth("88:88");
+      float timeScale = (w * 0.85f) / M5.Display.textWidth("88:88");
       M5.Display.setTextSize(timeScale);
       int timeH = M5.Display.fontHeight();
       M5.Display.setTextColor(TFT_GREEN, TFT_BLACK);
@@ -202,7 +203,6 @@ class Menu {
       { "Eye", updateContentPage },
       { "Game", updateContentPage }
     };
-    //size_t menu_count = 0;
     size_t menu_count = 7;
 
     // int myNum; // Attribute
@@ -211,7 +211,6 @@ class Menu {
         return;
       }
       // M5.Display.startWrite();
-
       // M5.Display.fillScreen(TFT_NAVY);
       
       int w = M5.Display.width() >> 3;
@@ -343,7 +342,7 @@ EyePage eyePage;
 GamePage gamePage;
 BasePage basePage;
 
-Menu myObj;
+Menu mainMenu;
 
 void updateContentPage(size_t cursor_index) {
   if(cursor_index == 0) {
@@ -368,14 +367,14 @@ void updateContentPage(size_t cursor_index) {
     contentPage = &gamePage;
   }
   contentPage->initialized = false;
+  // M5.Power.setVibration(100);
 }
 
 void setup(void) {
   
-  new(&myObj) Menu(); // reconstruct
+  new(&mainMenu) Menu(); // reconstruct
 
   contentPage = &clockPage;
-
 
   auto cfg = M5.config();
   M5.begin(cfg);
@@ -398,8 +397,8 @@ void setup(void) {
 
 void loop(void) {
   if (!M5.Display.displayBusy()) {
-    if(myObj.visible) {
-      myObj.update();
+    if(mainMenu.visible) {
+      mainMenu.update();
     } else {
       contentPage->render();
     }
@@ -418,12 +417,12 @@ void loop(void) {
   M5.update();
 
   auto touch_count = M5.Touch.getCount();
-  if (touch_count == 0) {
+  if (touch_count == 0 && contentPage == &hexPage) {
     hexPage.releaseTouch();  // finger lifted: end the drag so the fling starts
   }
   for (size_t i = 0; i < touch_count; i++) {
     auto detail = M5.Touch.getDetail(i);
-    if (!myObj.visible){
+    if (!mainMenu.visible){
       // Tap the eye page to switch to a random eye effect
       if (contentPage == &eyePage && detail.wasPressed()) {
         eyePage.randomEffect();
@@ -441,16 +440,16 @@ void loop(void) {
         clockPage.toggleMode();
       }
     }
-    if(myObj.visible) {
-      myObj.onTouch(detail);
+    if(mainMenu.visible) {
+      mainMenu.onTouch(detail);
     }
   }
 
   switch (M5.getBoard()) {
   default:
     if (M5.BtnA.wasClicked()) {
-      if(myObj.visible) {
-        myObj.move_menu(false);
+      if(mainMenu.visible) {
+        mainMenu.move_menu(false);
       } else {
         if (contentPage == &gamePage) {
            gamePage.BtnA();
@@ -458,19 +457,19 @@ void loop(void) {
       }
     }
     if (M5.BtnA.wasHold()) {
-      if(myObj.visible) {
-        myObj.exec_menu(false);
+      if(mainMenu.visible) {
+        mainMenu.exec_menu(false);
       }
     }
     if (M5.BtnA.isHolding() && M5.BtnB.isHolding()) {
-      if(!myObj.visible) {
-        myObj.visible = true;
-        myObj.init();
+      if(!mainMenu.visible) {
+        mainMenu.visible = true;
+        mainMenu.init();
       }
     }
     if (M5.BtnB.wasClicked()) {
-      if(myObj.visible) {
-        myObj.move_menu(true);
+      if(mainMenu.visible) {
+        mainMenu.move_menu(true);
       } else {
         if (contentPage == &gamePage) {
            gamePage.BtnB();

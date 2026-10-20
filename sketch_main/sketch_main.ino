@@ -1,35 +1,9 @@
 #include <M5Unified.h>
+#include "basepage.h"
+
+void updateContentPage(size_t cursor_index); 
 
 #define EYE_RGB(r, g, b) ((uint16_t)((((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | ((b) >> 3)))
-
-class BasePage {
-  public:
-    bool initialized = false;
-
-    virtual void render() {
-      if (initialized) {
-        update();
-      } else {
-        init();
-      }
-    }
-
-    virtual void init() {
-      if (initialized) {
-        return;
-      }
-      M5.Display.fillScreen(TFT_DARKGREY);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("fallback init");
-      initialized = true;
-    }
-
-    virtual void update() {
-      // M5.Display.fillScreen(TFT_DARKGREY);
-      // M5.Display.setCursor(100, 100);
-      // M5.Display.print("fallback update");
-    }
-};
 
 class HelloPage : public BasePage {
   public:
@@ -304,7 +278,7 @@ class HexPage : public BasePage {
     }
 
     // Called from loop() for each touch point while this page is showing
-    void onPress(const m5::touch_detail_t& d) {
+    void onTouch(const m5::touch_detail_t& d) {
       if (d.isPressed()) {
         if (dragLastY >= 0) {
           int dy = d.y - dragLastY;
@@ -803,15 +777,6 @@ class GamePage : public BasePage {
 
     void update() override {}
 
-    void randomSenior() {
-      int n = pickRandom(PERSON_COUNT + ITEM_COUNT, lastSenior);
-      if (n < PERSON_COUNT) {
-        showText("Famous person", persons[n], EYE_RGB(110, 20, 90));
-      } else {
-        showText("Historic item", items[n - PERSON_COUNT], EYE_RGB(20, 50, 120));
-      }
-    }
-
     // Called from loop() on a new screen press while this page is showing
     void onTap(int x) {
       if (mode == CHOOSE) {
@@ -819,45 +784,18 @@ class GamePage : public BasePage {
         if (x < (int)M5.Display.width() / 2) {
           drawAnimal(pickRandom(ANIMAL_COUNT, lastAnimal));
         } else {
-          randomSenior();
+          int n = pickRandom(PERSON_COUNT + ITEM_COUNT, lastSenior);
+          if (n < PERSON_COUNT) {
+            showText("Famous person", persons[n], EYE_RGB(110, 20, 90));
+          } else {
+            showText("Historic item", items[n - PERSON_COUNT], EYE_RGB(20, 50, 120));
+          }
         }
       } else {
         mode = CHOOSE;
         drawChoice();
       }
     }
-
-    void BtnA() {
-      if(mode == CHOOSE) {
-        // if (x < (int)M5.Display.width() / 2) {
-          drawAnimal(pickRandom(ANIMAL_COUNT, lastAnimal));
-        // } else {
-        //   int n = pickRandom(PERSON_COUNT + ITEM_COUNT, lastSenior);
-        //   if (n < PERSON_COUNT) {
-        //     showText("Famous person", persons[n], EYE_RGB(110, 20, 90));
-        //   } else {
-        //     showText("Historic item", items[n - PERSON_COUNT], EYE_RGB(20, 50, 120));
-        //   }
-        // }
-      } else {
-        mode = CHOOSE;
-        drawChoice();
-      }
-    }
-
-    void BtnB() {
-      if(mode == CHOOSE) {
-        // if (x < (int)M5.Display.width() / 2) {
-          // drawAnimal(pickRandom(ANIMAL_COUNT, lastAnimal));
-        // } else {
-          randomSenior();
-        // }
-      } else {
-        mode = CHOOSE;
-        drawChoice();
-      }
-    }
-
 
   private:
     int lastAnimal = -1, lastSenior = -1;
@@ -1444,7 +1382,7 @@ class Menu {
     bool initialized = false;
     bool sound = false;
     int menu_x = 2;
-    int menu_y = 10;
+    int menu_y = 20;
     int menu_w = 120;
     int menu_h = 30;
     int menu_padding = 25;
@@ -1454,7 +1392,7 @@ class Menu {
       { "Clock", updateContentPage },
       { "Hex", updateContentPage },
       { "Photos", updateContentPage },
-      { "Schedule", func_hello },
+      { "Schedule", updateContentPage },
       { "Eye", updateContentPage },
       { "Game", updateContentPage }
     };
@@ -1480,7 +1418,7 @@ class Menu {
           w, h, c
           //(i&1) ? TFT_BLACK:TFT_WHITE
         );
-        // M5.delay(1);
+        M5.delay(1);
       }
 
       menu_w = M5.Display.width() >> 1;
@@ -1570,24 +1508,6 @@ class Menu {
         }
       }
     }
-
-    void onTouch(auto detail) {
-      if ( ((size_t)detail.x - menu_x) < menu_w ) {
-        size_t index = (detail.y - menu_y) / menu_padding;
-        if (index < menu_count) {
-          if (detail.wasPressed()) {
-            select_menu(index);
-            // M5.Log.println("update");
-          } else if (index == cursor_index) {
-            if (detail.wasClicked()) {
-              exec_menu(false);
-            } else if (detail.isHolding()) {
-              exec_menu(true);
-            }
-          }
-        }
-      }
-    }
 };
 
 
@@ -1599,12 +1519,11 @@ ClockPage clockPage;
 HelloPage helloPage;
 EyePage eyePage;
 GamePage gamePage;
-
 BasePage basePage;
 
 Menu myObj;
 
-static void updateContentPage(size_t cursor_index) {
+void updateContentPage(size_t cursor_index) {
   if(cursor_index == 0) {
     contentPage = &helloPage;
   }
@@ -1621,7 +1540,7 @@ static void updateContentPage(size_t cursor_index) {
     contentPage = &basePage;
   }
   if(cursor_index == 5) {
-    contentPage = &basePage;
+    contentPage = &eyePage;
   }
   if(cursor_index == 6) {
     contentPage = &gamePage;
@@ -1632,8 +1551,20 @@ static void updateContentPage(size_t cursor_index) {
 void setup(void) {
   
   new(&myObj) Menu(); // reconstruct
+
+  // BasePage contentPage = BasePage();
+  // new(&contentPage) HexPage(); // reconstruct
+  // BasePage *contentPage = new HexPage();
+    // Creating a pointer of type Base  
+  // Creating an object of Derived class
   
+
+  // Pointing base class pointer to 
+  // derived class object
   contentPage = &clockPage;
+  // Calling the display function 
+  // using base class pointer
+  // contentPage->display();
 
   auto cfg = M5.config();
   M5.begin(cfg);
@@ -1688,42 +1619,38 @@ void loop(void) {
   }
   for (size_t i = 0; i < touch_count; i++) {
     auto detail = M5.Touch.getDetail(i);
-    if (!myObj.visible) {
-      // Tap the eye page to switch to a random eye effect
-      if (contentPage == &eyePage && detail.wasPressed()) {
-        eyePage.randomEffect();
+    // Tap the eye page to switch to a random eye effect
+    if (!myObj.visible && contentPage == &eyePage && detail.wasPressed()) {
+      eyePage.randomEffect();
+    }
+    // Junior / Senior choice and "back" tap on the game page
+    if (!myObj.visible && contentPage == &gamePage && detail.wasPressed()) {
+      gamePage.onTap(detail.x);
+    }
+    // Drag on the hex page to scroll the list
+    if (!myObj.visible && contentPage == &hexPage) {
+      hexPage.onTouch(detail);
+    }
+    // Tap the clock page to switch between digital and analog
+    if (!myObj.visible && contentPage == &clockPage && detail.wasPressed()) {
+      clockPage.toggleMode();
+    }
+    if(myObj.visible) {
+      if ( ((size_t)detail.x - myObj.menu_x) < myObj.menu_w) {
+        size_t index = (detail.y - myObj.menu_y) / myObj.menu_padding;
+        if (index < myObj.menu_count) {
+          if (detail.wasPressed()) {
+            myObj.select_menu(index);
+            M5.Log.println("update");
+          } else if (index == myObj.cursor_index) {
+            if (detail.wasClicked()) {
+              myObj.exec_menu(false);
+            } else if (detail.isHolding()) {
+              myObj.exec_menu(true);
+            }
+          }
+        }
       }
-      // Junior / Senior choice and "back" tap on the game page
-      if (contentPage == &gamePage && detail.wasPressed()) {
-        gamePage.onTap(detail.x);
-      }
-      // Drag on the hex page to scroll the list
-      if (contentPage == &hexPage) {
-        hexPage.onPress(detail);
-      }
-      // Tap the clock page to switch between digital and analog
-      if (contentPage == &clockPage && detail.wasPressed()) {
-        clockPage.toggleMode();
-      }
-    } else if(myObj.visible) {
-      // zz
-      myObj.onTouch(detail);
-      // if ( ((size_t)detail.x - myObj.menu_x) < myObj.menu_w ) {
-      //   size_t index = (detail.y - myObj.menu_y) / myObj.menu_padding;
-      //   if (index < myObj.menu_count) {
-      //     if (detail.wasPressed()) {
-      //       myObj.select_menu(index);
-      //       M5.Log.println("update");
-      //     } else if (index == myObj.cursor_index) {
-      //       if (detail.wasClicked()) {
-      //         myObj.exec_menu(false);
-      //       } else if (detail.isHolding()) {
-      //         myObj.exec_menu(true);
-      //       }
-      //     }
-      //   }
-      // }
-      // zz
     }
     //
   }
@@ -1734,9 +1661,6 @@ void loop(void) {
       if(myObj.visible) {
         myObj.move_menu(false);
       } else {
-        if (contentPage == &gamePage) {
-          gamePage.BtnA();
-        }
         // myObj.visible = true;
         // myObj.init();
       }
@@ -1745,9 +1669,9 @@ void loop(void) {
     //   myObj.exec_menu(false);
     // }
     if (M5.BtnA.isHolding() && M5.BtnB.isHolding()) {
-      // M5.Log.println("holding");
+      M5.Log.println("holding");
       if(!myObj.visible) {
-        // M5.Log.println("holding - visible");
+        M5.Log.println("holding - visible");
         myObj.visible = true;
         myObj.init();
       }
@@ -1755,10 +1679,6 @@ void loop(void) {
     if (M5.BtnB.wasClicked()) {
       if(myObj.visible) {
         myObj.move_menu(true);
-      } else {
-        if (contentPage == &gamePage) {
-          gamePage.BtnB();
-        }
       }
     }
     break;

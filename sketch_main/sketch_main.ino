@@ -442,24 +442,7 @@ void loop(void) {
       }
     }
     if(myObj.visible) {
-      //
       myObj.onTouch(detail);
-      // if ( ((size_t)detail.x - myObj.menu_x) < myObj.menu_w) {
-      //   size_t index = (detail.y - myObj.menu_y) / myObj.menu_padding;
-      //   if (index < myObj.menu_count) {
-      //     if (detail.wasPressed()) {
-      //       myObj.select_menu(index);
-      //       // M5.Log.println("update");
-      //     } else if (index == myObj.cursor_index) {
-      //       if (detail.wasClicked()) {
-      //         myObj.exec_menu(false);
-      //       } else if (detail.isHolding()) {
-      //         myObj.exec_menu(true);
-      //       }
-      //     }
-      //   }
-      // }
-      //
     }
   }
 
@@ -477,7 +460,6 @@ void loop(void) {
     if (M5.BtnA.wasHold()) {
       if(myObj.visible) {
         myObj.exec_menu(false);
-        M5.Log.println("holding - visible");
       }
     }
     if (M5.BtnA.isHolding() && M5.BtnB.isHolding()) {

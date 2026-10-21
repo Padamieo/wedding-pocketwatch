@@ -1,4 +1,13 @@
+#define NTP_TIMEZONE "UTC-0"
+#define NTP_SERVER1  "0.pool.ntp.org"
+#define NTP_SERVER2  "1.pool.ntp.org"
+#define NTP_SERVER3  "2.pool.ntp.org"
+
+#include <Arduino.h>
 #include <M5Unified.h>
+#include <WiFi.h>
+#include <esp_sntp.h>
+#include <sntp.h>
 #include "base_page.h"
 #include "hello_page.h"
 
@@ -7,19 +16,50 @@
 #include "hex_page.h"
 #include "eye_page.h"
 #include "game_page.h"
+#include "schedule_page.h"
 
 void updateContentPage(size_t cursor_index); 
 
+const char *ssid = "Adam";
+const char *password = "pancakes";
 
 class ClockPage : public BasePage {
   public:
     bool analog = false;
     int lastSecond = -1;
+    bool internetSynced = false;
 
     // Off-screen buffer for the analog face (falls back to direct drawing)
     M5Canvas canvas{&M5.Display};
     bool canvasReady = false;
     int faceR = 0;
+
+    void initInternet() {
+      // move into its own thing?
+      WiFi.mode(WIFI_STA);
+      M5.Display.setCursor(100, 100);
+      M5.Display.println("WiFi mode set to STA");
+      WiFi.begin(ssid, password);
+      
+      while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        M5.Display.print(".");
+      }
+
+      configTzTime(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+
+      while (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
+        Serial.print('.');
+        delay(1000);
+      }
+
+      time_t t = time(nullptr) + 1;  // Advance one second.
+      while (t > time(nullptr));     /// Synchronization in seconds
+      M5.Rtc.setDateTime(gmtime(&t));
+      //internetSynced = true;
+
+      // - end
+    }
 
     // Called once from setup(). Time comes from the battery-backed RTC,
     // so it survives power-off. If the RTC has never been set (or lost its
@@ -39,6 +79,8 @@ class ClockPage : public BasePage {
         int month = (strstr(months, mon) - months) / 3 + 1;
         M5.Rtc.setDateTime({ { (int16_t)year, (int8_t)month, (int8_t)day }, { (int8_t)hh, (int8_t)mm, (int8_t)ss } });
       }
+
+      // initInternet();
     }
 
     void toggleMode() {
@@ -77,6 +119,10 @@ class ClockPage : public BasePage {
       }
       if (dt.time.seconds == lastSecond) {
         return;
+      }
+      if (!internetSynced) {
+        M5.Log.println("update");
+        
       }
       lastSecond = dt.time.seconds;
       if (analog) {
@@ -194,16 +240,16 @@ class Menu {
     int menu_h = 30;
     int menu_padding = 25;
     size_t cursor_index = 0;
-    menu_item_t menus[7] = {
+    menu_item_t menus[6] = {
       { "Hello", updateContentPage },
       { "Clock", updateContentPage },
       { "Hex", updateContentPage },
-      { "Photos", updateContentPage },
+      // { "Photos", updateContentPage },
       { "Schedule", updateContentPage },
       { "Eye", updateContentPage },
       { "Game", updateContentPage }
     };
-    size_t menu_count = 7;
+    size_t menu_count = 6;
 
     // int myNum; // Attribute
     void init() { // Method
@@ -332,15 +378,16 @@ class Menu {
     }
 };
 
-// BasePage contentPage;
+// setup classes
 BasePage* contentPage;
+// BasePage basePage;
 
-HexPage hexPage;
-ClockPage clockPage;
 HelloPage helloPage;
+ClockPage clockPage;
+HexPage hexPage;
+SchedulePage schedulePage;
 EyePage eyePage;
 GamePage gamePage;
-BasePage basePage;
 
 Menu mainMenu;
 
@@ -354,22 +401,23 @@ void updateContentPage(size_t cursor_index) {
   if(cursor_index == 2) {
     contentPage = &hexPage;
   }
+  // if(cursor_index == 3) {
+  //   contentPage = &schedulePage;
+  // }
   if(cursor_index == 3) {
-    contentPage = &basePage;
+    contentPage = &schedulePage;
   }
   if(cursor_index == 4) {
-    contentPage = &basePage;
-  }
-  if(cursor_index == 5) {
     contentPage = &eyePage;
   }
-  if(cursor_index == 6) {
+  if(cursor_index == 5) {
     contentPage = &gamePage;
   }
   contentPage->initialized = false;
   // M5.Power.setVibration(100);
 }
 
+// main startup function
 void setup(void) {
   
   new(&mainMenu) Menu(); // reconstruct
@@ -395,6 +443,7 @@ void setup(void) {
   contentPage->init();
 }
 
+// main update function
 void loop(void) {
   if (!M5.Display.displayBusy()) {
     if(mainMenu.visible) {
@@ -419,10 +468,23 @@ void loop(void) {
   auto touch_count = M5.Touch.getCount();
   if (touch_count == 0 && contentPage == &hexPage) {
     hexPage.releaseTouch();  // finger lifted: end the drag so the fling starts
+    schedulePage.releaseTouch();
   }
   for (size_t i = 0; i < touch_count; i++) {
     auto detail = M5.Touch.getDetail(i);
     if (!mainMenu.visible){
+      // Tap the clock page to switch between digital and analog
+      if (contentPage == &clockPage && detail.wasPressed()) {
+        clockPage.toggleMode();
+      }
+      // Drag on the hex page to scroll the list
+      if (contentPage == &hexPage) {
+        hexPage.onTouch(detail);
+      }
+      // Drag on the schedule page to scroll the list
+      if (contentPage == &schedulePage) {
+        schedulePage.onTouch(detail);
+      }
       // Tap the eye page to switch to a random eye effect
       if (contentPage == &eyePage && detail.wasPressed()) {
         eyePage.randomEffect();
@@ -430,14 +492,6 @@ void loop(void) {
       // Junior / Senior choice and "back" tap on the game page
       if (contentPage == &gamePage && detail.wasPressed()) {
         gamePage.onTap(detail.x);
-      }
-      // Drag on the hex page to scroll the list
-      if (contentPage == &hexPage) {
-        hexPage.onTouch(detail);
-      }
-      // Tap the clock page to switch between digital and analog
-      if (contentPage == &clockPage && detail.wasPressed()) {
-        clockPage.toggleMode();
       }
     }
     if(mainMenu.visible) {
@@ -452,7 +506,7 @@ void loop(void) {
         mainMenu.move_menu(false);
       } else {
         if (contentPage == &gamePage) {
-           gamePage.BtnA();
+          gamePage.BtnA();
         }
       }
     }

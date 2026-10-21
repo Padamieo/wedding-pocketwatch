@@ -39,13 +39,13 @@ class GamePage : public BasePage {
       "Claude Monet", "Salvador Dali", "Andy Warhol", "Marilyn Monroe",
       "Audrey Hepburn", "John Lennon", "Freddie Mercury", "Bob Marley",
       "Muhammad Ali", "Pele", "Usain Bolt", "Serena Williams",
-      "Johan Cruijff", "Yuri Gagarin", "Stephen Hawking", "Sigmund Freud",
+      "Boudica", "Yuri Gagarin", "Stephen Hawking", "Sigmund Freud",
       "Louis Pasteur", "Alexander Fleming", "Ferdinand Magellan", "James Cook",
       "Vasco da Gama", "Hannibal", "Charlemagne", "Augustus",
       "Nefertiti", "Ramses II", "Buddha", "Elizabeth I",
       "Catherine the Great", "Peter the Great", "John F. Kennedy", "Franklin D. Roosevelt",
       "Barack Obama", "Dalai Lama", "Harriet Tubman", "Benjamin Franklin",
-      "Thomas Jefferson", "Coco Chanel", "Agatha Christie", "J.R.R. Tolkien",
+      "Thomas Jefferson", "Erwin Schrödinger", "Agatha Christie", "J.R.R. Tolkien",
       "Homer", "Nicolaus Copernicus", "Archimedes", "Pythagoras"
     };
     const char* items[ITEM_COUNT] = {

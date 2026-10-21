@@ -43,11 +43,11 @@ class SchedulePage : public BasePage {
       23 * 60 + 59
     };
     const char* items[ITEM_COUNT] = {
-      "07:00 - Good morning",
-      "10:45 - Groom's Ready",
+      "Good Morning",
+      "10:45 - Groom's Ready?",
       "11:30 - Guests Arrive",
       "12:00 - Ceremony",
-      "12:45 - Drinks & Canapes",
+      "12:45 - Drinks & Canapés",
       "14:30 - Wedding Breakfast",
       "17:30 - Speeches",
       "18:30 - Cocktail Hour",

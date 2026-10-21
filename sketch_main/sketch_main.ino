@@ -58,7 +58,6 @@ class ClockPage : public BasePage {
       M5.Rtc.setDateTime(gmtime(&t));
       //internetSynced = true;
 
-      // - end
     }
 
     // Called once from setup(). Time comes from the battery-backed RTC,
@@ -235,7 +234,7 @@ class Menu {
     bool initialized = false;
     bool sound = false;
     int menu_x = 2;
-    int menu_y = 20;
+    int menu_y = 10;
     int menu_w = 120;
     int menu_h = 30;
     int menu_padding = 25;
@@ -251,13 +250,11 @@ class Menu {
     };
     size_t menu_count = 6;
 
-    // int myNum; // Attribute
-    void init() { // Method
+    // initial screen setup
+    void init() {
       if (initialized) {
         return;
       }
-      // M5.Display.startWrite();
-      // M5.Display.fillScreen(TFT_NAVY);
       
       int w = M5.Display.width() >> 3;
       int h = M5.Display.height() >> 3;
@@ -267,39 +264,27 @@ class Menu {
           rand() % M5.Display.width(),
           rand() % M5.Display.height(),
           w, h, c
-          //(i&1) ? TFT_BLACK:TFT_WHITE
         );
         M5.delay(1);
       }
-
-      menu_w = M5.Display.width() >> 1;
-
-        M5.Display.setFont(&fonts::DejaVu18);
-        // if (M5.Display.width() > 400) {
-        M5.Display.setTextSize(2);
-          // menu_y *= 2;
-          // menu_w = M5.Display.width() >> 1;
-        //}
+      
+      M5.Display.setFont(&fonts::DejaVu18);
+      M5.Display.setTextSize(2);
 
       static int x = M5.Lcd.width() / 2;
-
+      menu_w = M5.Display.width() >> 1;
       menu_x = x - menu_w / 2;
-
       menu_padding = (M5.Display.height() - menu_y) / menu_count;
       menu_h = menu_padding - 2;
       
       M5.Display.setCursor(0, M5.Display.width() / 2);
       M5.Display.print("MENU");
-
       M5.Display.setCursor(menu_x, 0);
-
       M5.delay(10);
 
       for (size_t i = 0; i < menu_count; i++) {
         draw_menu(i, i == cursor_index);
       }
-      // menus[2] 
-      // constexpr const size_t menu_count = sizeof(menus) / sizeof(this.menus[0]);
       menu_count = sizeof(menus) / sizeof(menus[0]);
 
       initialized = true;
@@ -318,7 +303,6 @@ class Menu {
     }
 
     void select_menu(size_t index) {
-      /// 操作音を鳴らす。
       float Hz = 880 * powf(2.0, index / 12.0f);
       sound && M5.Speaker.tone(Hz, 100);
       cursor_index = index;
@@ -333,19 +317,14 @@ class Menu {
     }
 
     void exec_menu(bool holding) {
-      /// holding は長押し中とそれ以外で処理を変えたい場合に利用できる。
       if (holding == false) {
         sound && M5.Speaker.tone(880, 150);
       }
 
       if (menus[cursor_index].func != nullptr) {
-        // M5.Display.setClipRect(menu_x + menu_w, 0, M5.Display.width(), M5.Display.height());
-        // M5.Display.setClipRect(0, 0, M5.Display.width() - menu_w + 10, M5.Display.height());
         menus[cursor_index].func(cursor_index);
         visible = false;
         initialized = false;
-        // M5.Display.clearClipRect();
-        // M5.Display.fillScreen(TFT_AZURE);
       }
     }
 
@@ -428,9 +407,9 @@ void setup(void) {
   M5.begin(cfg);
   Serial.begin(115200);
 
-  if (M5.Display.width() > M5.Display.height()) {
-    M5.Display.setRotation(M5.Display.getRotation() ^ 1);
-  }
+  // if (M5.Display.width() > M5.Display.height()) {
+  //   M5.Display.setRotation(M5.Display.getRotation() ^ 1);
+  // }
   // M5.Display.setRotation(M5.Display.getRotation() ^ 3);
 
   /// このサンプルでは、startWriteをしたまま、対になるendWriteを使わないようにする。
@@ -508,6 +487,9 @@ void loop(void) {
         if (contentPage == &gamePage) {
           gamePage.BtnA();
         }
+        if (contentPage == &eyePage) {
+          eyePage.BtnA();
+        }
       }
     }
     if (M5.BtnA.wasHold()) {
@@ -526,7 +508,10 @@ void loop(void) {
         mainMenu.move_menu(true);
       } else {
         if (contentPage == &gamePage) {
-           gamePage.BtnB();
+          gamePage.BtnB();
+        }
+        if (contentPage == &eyePage) {
+          eyePage.BtnB();
         }
       }
     }

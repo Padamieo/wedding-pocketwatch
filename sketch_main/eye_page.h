@@ -48,18 +48,40 @@ class EyePage : public BasePage {
       initialized = true;
     }
 
-    // Called on screen press: switch to a different random effect
-    void randomEffect() {
-      int n;
-      do {
-        n = rand() % EFFECT_COUNT;
-      } while (n == effect);
+    void newEye(int n) {
       effect = n;
       phase = 0;
       closed = false;
       next_ms = M5.millis() + openTime();
       lookX = lookY = lookTX = lookTY = 0;
       dirty = true;
+    }
+
+    // Called on screen press: switch to a different random effect
+    void randomEffect() {
+      int n;
+      do {
+        n = rand() % EFFECT_COUNT;
+      } while (n == effect);
+      newEye(n);
+    }
+
+    void BtnA() {
+      int n = effect;
+      n++;
+      if (n == EFFECT_COUNT) {
+        n = 0;
+      }
+      newEye(n);
+    }
+
+    void BtnB() {
+      int n = effect;
+      n--;
+      if (n == -1) {
+        n = EFFECT_COUNT-1;
+      }
+      newEye(n);
     }
 
     void update() override {

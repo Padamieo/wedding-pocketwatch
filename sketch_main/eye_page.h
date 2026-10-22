@@ -4,7 +4,7 @@
 class EyePage : public BasePage {
   public:
     enum Effect {
-      NORMAL, CAT, BLOOD, ZOMBIE, HEART, HYPNO, DOLLAR, BLOODSHOT, ROBOT, DEAD,
+      NORMAL, DRUGS, CAT, BLOOD, ZOMBIE, HEART, HYPNO, DOLLAR, BLOODSHOT, ROBOT, DEAD,
       SCARED, CUTE, STAR, DEMON, GOOGLY, CRYING, RAINBOW, SNAKE, ALIEN, SLEEPY,
       // Naruto
       TOAD, SHARINGAN1, SHARINGAN2, SHARINGAN3, MANGEKYO_ITACHI, MANGEKYO_SASUKE,
@@ -22,6 +22,7 @@ class EyePage : public BasePage {
     bool dirty = true;       // frame needs to be redrawn and pushed
     uint32_t next_ms = 0;
     int blinksLeft = 0;      // >0 while doing a double blink
+    bool cartoon = false; 
 
     // "Looking around": pupil offset eases toward a random target
     float lookX = 0, lookY = 0, lookTX = 0, lookTY = 0;
@@ -31,18 +32,27 @@ class EyePage : public BasePage {
     M5Canvas canvas{&M5.Display};
     bool canvasReady = false;
 
+    void largerScale() {
+      eyeR = min((int)M5.Display.width(), (int)M5.Display.height()) * 2 / 4.6;
+      pupilR = eyeR / 2.5;
+    }
+
+    void standardScale() {
+      eyeR = min((int)M5.Display.width(), (int)M5.Display.height()) * 2 / 5;
+      pupilR = eyeR / 3;
+    }
+
     void init() override {
       if (initialized) {
         return;
       }
       cx = M5.Display.width() / 2;
       cy = M5.Display.height() / 2;
-      eyeR = min((int)M5.Display.width(), (int)M5.Display.height()) * 2 / 5;
-      pupilR = eyeR / 3;
+      cartoon ? largerScale() : standardScale();
       closed = false;
       next_ms = M5.millis() + openTime();
       allocCanvas();
-      M5.Display.fillScreen(TFT_BLACK);
+      M5.Display.fillScreen(TFT_BLACK);  
       dirty = true;
       present();
       initialized = true;
@@ -73,6 +83,12 @@ class EyePage : public BasePage {
         n = 0;
       }
       newEye(n);
+    }
+
+    void BtnAhold() {
+      cartoon = !cartoon;
+      initialized = false;
+      canvasReady = false;
     }
 
     void BtnB() {
@@ -116,7 +132,7 @@ class EyePage : public BasePage {
     bool isAnimated() const {
       return effect == BLOOD || effect == HYPNO || effect == CRYING || effect == RAINBOW
           || effect == DEMON || effect == ROBOT || effect == GOOGLY || effect == SPARKLE
-          || (effect >= SHARINGAN1 && effect <= RINNE_SHARINGAN);
+          || effect == STAR || effect == DRUGS || (effect >= SHARINGAN1 && effect <= RINNE_SHARINGAN);
     }
 
     // Effects whose pupil glances around
@@ -124,7 +140,7 @@ class EyePage : public BasePage {
       switch (effect) {
         case NORMAL: case CAT: case CUTE: case SNAKE: case BLOODSHOT: case HEART:
         case SCARED: case TOAD: case SHARINGAN1: case SHARINGAN2: case SHARINGAN3:
-        case SPARKLE: case ZOMBIE:
+        case SPARKLE: case ZOMBIE: case DRUGS:
           return true;
         default:
           return false;
@@ -135,7 +151,7 @@ class EyePage : public BasePage {
     // then ease toward it so the motion looks like a glance
     void updateLook(uint32_t ms) {
       if (ms >= look_ms) {
-        float range = (eyeR - pupilR) * 0.55f;
+        float range = (eyeR - pupilR) * 0.65f;
         if (esp_random() % 3 == 0) {
           lookTX = lookTY = 0;
         } else {
@@ -186,22 +202,6 @@ class EyePage : public BasePage {
       g.fillCircle(x - s / 2, y - s / 3, s / 2 + 1, c);
       g.fillCircle(x + s / 2, y - s / 3, s / 2 + 1, c);
       g.fillTriangle(x - s, y - s / 5, x + s, y - s / 5, x, y + s, c);
-    }
-
-    template <typename T>
-    void star(T& g, int x, int y, int R, uint16_t c) {
-      int r = R * 2 / 5;
-      int px[10], py[10];
-      for (int i = 0; i < 10; i++) {
-        float a = -M_PI / 2 + i * M_PI / 5;
-        int rr = (i & 1) ? r : R;
-        px[i] = x + (int)(cosf(a) * rr);
-        py[i] = y + (int)(sinf(a) * rr);
-      }
-      for (int i = 0; i < 10; i++) {
-        int j = (i + 1) % 10;
-        g.fillTriangle(x, y, px[i], py[i], px[j], py[j], c);
-      }
     }
 
     // Star rotated by rot radians
@@ -293,10 +293,29 @@ class EyePage : public BasePage {
       }
       int R = eyeR, P = pupilR;
       int px = ex + (int)lookX, py = ey + (int)lookY;  // gaze-shifted centre
+
       switch (effect) {
         case NORMAL:
           g.fillCircle(ex, ey, R, TFT_WHITE);
           basicPupil(g, px, py, P, TFT_BLUE);
+          break;
+
+        case DRUGS:
+          g.fillCircle(ex, ey, R,
+            EYE_RGB(
+            255 - (int)((sinf(phase * 0.08f) + 1) * 30),
+            255 - (int)((sinf(phase * 0.06f) + 1) * 30),
+            255 - (int)((sinf(phase * 0.02f) + 1) * 30)
+            )
+          );
+          basicPupil(g, px, py,
+            P / 0.9f + (int)((sinf(phase * 0.1f) + 1) * P / 3) , 
+            EYE_RGB(
+              (int)((sinf(phase * 0.01f) + 1) * 127),
+              (int)((sinf(phase * 0.09f) + 1) * 127),
+              (int)((sinf(phase * 0.05f) + 1) * 127)
+            )
+          );
           break;
 
         case CAT:
@@ -390,7 +409,7 @@ class EyePage : public BasePage {
 
         case STAR:
           g.fillCircle(ex, ey, R, TFT_WHITE);
-          star(g, ex, ey, P + P / 2, EYE_RGB(255, 200, 0));
+          starRot(g, ex, ey, P + P / 2, phase, EYE_RGB(255, 200, 0));
           break;
 
         case DEMON: {

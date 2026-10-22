@@ -401,7 +401,8 @@ void setup(void) {
   
   new(&mainMenu) Menu(); // reconstruct
 
-  contentPage = &clockPage;
+  // contentPage = &clockPage;
+  contentPage = &eyePage;
 
   auto cfg = M5.config();
   M5.begin(cfg);
@@ -495,6 +496,10 @@ void loop(void) {
     if (M5.BtnA.wasHold()) {
       if(mainMenu.visible) {
         mainMenu.exec_menu(false);
+      } else {
+        if (contentPage == &eyePage) {
+          eyePage.BtnAhold();
+        }
       }
     }
     if (M5.BtnA.isHolding() && M5.BtnB.isHolding()) {

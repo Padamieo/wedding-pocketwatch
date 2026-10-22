@@ -24,11 +24,7 @@ class BasePage {
       initialized = true;
     }
 
-    virtual void update() {
-      // M5.Display.fillScreen(TFT_DARKGREY);
-      // M5.Display.setCursor(100, 100);
-      // M5.Display.print("fallback update");
-    }
+    virtual void update() {}
 };
 
 #endif

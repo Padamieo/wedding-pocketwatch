@@ -28,36 +28,39 @@ class ClockPage : public BasePage {
     bool analog = false;
     int lastSecond = -1;
     bool internetSynced = false;
+    bool givenUp = false;
+    int attempts = 0;
+    int index = 0;
+    int checks[32] = {
+      1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25,30,35,40,50,60,70,80,90,100,150,200
+    };
 
     // Off-screen buffer for the analog face (falls back to direct drawing)
     M5Canvas canvas{&M5.Display};
     bool canvasReady = false;
     int faceR = 0;
 
-    void initInternet() {
-      // move into its own thing?
+    static void initInternet() {
       WiFi.mode(WIFI_STA);
-      M5.Display.setCursor(100, 100);
-      M5.Display.println("WiFi mode set to STA");
+      // M5.Display.setCursor(100, 100);
+      // M5.Display.println("WiFi mode set to STA");
       WiFi.begin(ssid, password);
-      
-      while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        M5.Display.print(".");
-      }
+    }
 
+    void checkInternetTime() {
+      if (WiFi.status() != WL_CONNECTED) {
+        // Serial.printf("no wifi\n\r");
+        return;
+      }
       configTzTime(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
-
-      while (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
-        Serial.print('.');
-        delay(1000);
+      if (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
+        // Serial.printf("SNTP_SYNC_STATUS_COMPLETED\n\r");
+        return;
       }
-
       time_t t = time(nullptr) + 1;  // Advance one second.
       while (t > time(nullptr));     /// Synchronization in seconds
       M5.Rtc.setDateTime(gmtime(&t));
-      //internetSynced = true;
-
+      internetSynced = true;
     }
 
     // Called once from setup(). Time comes from the battery-backed RTC,
@@ -79,7 +82,7 @@ class ClockPage : public BasePage {
         M5.Rtc.setDateTime({ { (int16_t)year, (int8_t)month, (int8_t)day }, { (int8_t)hh, (int8_t)mm, (int8_t)ss } });
       }
 
-      // initInternet();
+      initInternet();
     }
 
     void toggleMode() {
@@ -91,7 +94,8 @@ class ClockPage : public BasePage {
       if (initialized) {
         return;
       }
-      M5.Display.fillScreen(TFT_MAROON);
+      M5.Display.fillScreen(TFT_BLACK);
+      // M5.Display.fillScreen(TFT_NAVY);
       faceR = min((int)M5.Display.width(), (int)M5.Display.height()) * 9 / 20;
       if (analog && !canvasReady) {
         canvas.setPsram(true);
@@ -120,8 +124,18 @@ class ClockPage : public BasePage {
         return;
       }
       if (!internetSynced) {
-        M5.Log.println("update");
-        
+        //M5.Log.println("update");
+        //Serial.printf("test=%02d\n\r", attempts);
+        attempts++;
+        if(checks[index] == attempts) {
+          //Serial.printf("do=%02d\n\r", index);
+          if (index == 200) {
+            //Serial.printf("internetSynced=%02d\n\r", index);
+            givenUp = true;
+          }
+          index++;
+          checkInternetTime();
+        }
       }
       lastSecond = dt.time.seconds;
       if (analog) {
@@ -162,13 +176,13 @@ class ClockPage : public BasePage {
       float timeScale = (w * 0.85f) / M5.Display.textWidth("88:88");
       M5.Display.setTextSize(timeScale);
       int timeH = M5.Display.fontHeight();
-      M5.Display.setTextColor(TFT_GREEN, TFT_BLACK);
+      M5.Display.setTextColor(internetSynced ? TFT_GREEN : givenUp ? TFT_ORANGE : TFT_RED, TFT_BLACK);
       snprintf(buf, sizeof(buf), "%02d:%02d", dt.time.hours, dt.time.minutes);
       M5.Display.drawString(buf, w / 2, h / 2 - timeH / 3);
 
       M5.Display.setTextSize(timeScale * 0.45f);  // seconds, same 7-segment font
       int secY = h / 2 - timeH / 3 + timeH / 2 + M5.Display.fontHeight() / 2 + 8;
-      M5.Display.setTextColor(TFT_DARKGREEN, TFT_BLACK);
+      M5.Display.setTextColor(internetSynced ? TFT_DARKGREEN : givenUp ? TFT_BROWN : TFT_MAROON, TFT_BLACK);
       snprintf(buf, sizeof(buf), "%02d", dt.time.seconds);
       M5.Display.drawString(buf, w / 2, secY);
 
@@ -401,8 +415,8 @@ void setup(void) {
   
   new(&mainMenu) Menu(); // reconstruct
 
-  // contentPage = &clockPage;
-  contentPage = &eyePage;
+  contentPage = &clockPage;
+  // contentPage = &eyePage;
 
   auto cfg = M5.config();
   M5.begin(cfg);

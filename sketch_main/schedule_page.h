@@ -22,13 +22,13 @@ class SchedulePage : public BasePage {
       // drinks
       12 * 60 + 45,
       // breakfast
-      14 * 60 + 30,
-      // sppeches
+      14 * 60 + 15,
+      // speeches
       17 * 60 + 30,
       // cocktail hour
       18 * 60 + 30,
       // fight
-      19 * 60 + 15,
+      19 * 60 + 30,
       // cake cutting
       19 * 60 + 45,
       // first dance
@@ -36,7 +36,7 @@ class SchedulePage : public BasePage {
       // band
       20 * 60 + 10,
       // food
-      21 * 60 + 00,
+      21 * 60 + 0,
       // music end
       23 * 60 + 30,
       // goodnight
@@ -47,11 +47,11 @@ class SchedulePage : public BasePage {
       "10:45 - Groom's Ready?",
       "11:30 - Guests Arrive",
       "12:00 - Ceremony",
-      "12:45 - Drinks & Canapés",
-      "14:30 - Wedding Breakfast",
+      "12:45 - Drinks & Canapes",
+      "14:15 - Wedding Breakfast",
       "17:30 - Speeches",
       "18:30 - Cocktail Hour",
-      "19:15 - Scotish Boys Fight",
+      "19:30 - Scotish Boys Fight",
       "19:45 - Cake Cutting",
       "20:00 - First Dance",
       "20:10 - Live Band",

@@ -9,6 +9,8 @@
 #include <esp_sntp.h>
 #include <sntp.h>
 #include "base_page.h"
+
+const char *user = "Erwin";
 #include "hello_page.h"
 
 #define EYE_RGB(r, g, b) ((uint16_t)((((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | ((b) >> 3)))
@@ -416,7 +418,7 @@ void setup(void) {
   new(&mainMenu) Menu(); // reconstruct
 
   contentPage = &clockPage;
-  // contentPage = &eyePage;
+  // contentPage = &helloPage;
 
   auto cfg = M5.config();
   M5.begin(cfg);

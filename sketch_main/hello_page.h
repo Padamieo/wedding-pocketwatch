@@ -1,6 +1,8 @@
 #ifndef HELLO_PAGE_H
 #define HELLO_PAGE_H
 
+const char *checkUser = "Erwin";
+
 // Define the hello page
 class HelloPage : public BasePage {
   public:
@@ -9,8 +11,26 @@ class HelloPage : public BasePage {
         return;
       }
       M5.Display.fillScreen(TFT_DARKGREEN);
-      M5.Display.setCursor(100, 100);
-      M5.Display.print("HelloPage init");
+      M5.Display.setTextDatum(textdatum_t::middle_center);
+      M5.Display.setFont(&fonts::DejaVu18);
+      M5.Display.setTextSize(2);
+
+      if(user == checkUser) {
+        M5.Display.drawString("Dear Erwin", M5.Display.width() / 2, 120);
+        M5.Display.drawString("I made this for you", M5.Display.width() / 2, 170);
+        M5.Display.drawString("Apes Together Strong", M5.Display.width() / 2, 220);
+        M5.Display.drawString("Lots of Love", M5.Display.width() / 2, 270);
+        M5.Display.drawString("Adam & Heather", M5.Display.width() / 2, 320);
+      } else {
+        M5.Display.drawString("Dear Calum", M5.Display.width() / 2, 120);
+        M5.Display.drawString("I made this for you", M5.Display.width() / 2, 170);
+        M5.Display.drawString("Where's my Money?", M5.Display.width() / 2, 220);
+        M5.Display.drawString("Brrrrrrrr-chic-chic-brrrrrrr-chic", M5.Display.width() / 2, 260);
+        M5.Display.drawString("wikka-wikkia-brrrrrrr-chic", M5.Display.width() / 2, 290);
+        M5.Display.drawString("Lots of Love", M5.Display.width() / 2, 320);
+        M5.Display.drawString("Adam & Heather", M5.Display.width() / 2, 370);
+      }
+
       lastLevel = -2;
       last_ms = 0;
       initialized = true;
